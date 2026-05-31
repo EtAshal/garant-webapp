@@ -171,15 +171,43 @@
 
         document.getElementById('description').addEventListener('input', updateCommission);
 
-        function createDeal() {
-            const amount = parseFloat(document.getElementById('amount').value);
-            const description = document.getElementById('description').value;
+        async function createDeal() {
+    const amount = parseFloat(document.getElementById('amount').value);
+    const description = document.getElementById('description').value;
 
-            if (!amount || amount < 100 || !description) return;
+    if (!amount || amount < 100 || !description) return;
 
-            // Пока просто показываем что сделка создана
-            tg.showAlert(`Сделка создана!\n\nСумма: ${amount.toLocaleString()} ₽\nТовар: ${description}\n\n(Функция сохранения будет добавлена позже)`);
+    const btn = document.getElementById('create-btn');
+    btn.disabled = true;
+    btn.textContent = 'Создаём...';
+
+    try {
+        const response = await fetch('https://garant-backend-production.up.railway.app/deals/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                seller_id: tg.initDataUnsafe?.user?.id || 0,
+                amount: amount,
+                description: description
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            tg.showAlert(`✅ Сделка создана!\n\nСумма: ${amount.toLocaleString()} ₽\nТовар: ${description}\n\nСсылка для покупателя:\nhttps://etashal.github.io/garant-webapp/deal.html?id=${data.deal_id}`);
+            window.location.href = 'index.html';
+        } else {
+            tg.showAlert('Ошибка: ' + data.error);
+            btn.disabled = false;
+            btn.textContent = 'Создать сделку';
         }
+    } catch (e) {
+        tg.showAlert('Ошибка соединения с сервером');
+        btn.disabled = false;
+        btn.textContent = 'Создать сделку';
+    }
+}
     </script>
 </body>
 </html>
