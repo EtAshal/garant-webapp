@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Сделка</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--tg-theme-bg-color, #fff);
+            color: var(--tg-theme-text-color, #000);
+            padding: 16px;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .back-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        h1 { font-size: 20px; font-weight: 700; }
+        .card {
+            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .card-label {
+            font-size: 12px;
+            opacity: 0.5;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+        .card-value {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .amount { font-size: 32px; font-weight: 700; }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+        .status-pending { background: #FFF3CD; color: #856404; }
+        .status-active { background: #D1ECF1; color: #0C5460; }
+        .status-completed { background: #D4EDDA; color: #155724; }
+        .status-cancelled { background: #F8D7DA; color: #721C24; }
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 16px;
+            border-radius: 12px;
+            border: none;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 12px;
+        }
+        .btn-success { background: #28a745; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-primary { background: #2AABEE; color: white; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .divider {
+            height: 1px;
+            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            margin: 16px 0;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            opacity: 0.5;
+        }
+        .commission-info {
+            font-size: 13px;
+            opacity: 0.6;
+            text-align: center;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <button class="back-btn" onclick="window.location.href='index.html'">←</button>
+        <h1>Сделка</h1>
+    </div>
+
+    <div id="loading" class="loading">Загружаем сделку...</div>
+    <div id="content" style="display:none"></div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        const BACKEND = 'https://garant-backend-production.up.railway.app';
+        const params = new URLSearchParams(window.location.search);
+        const dealId = params.get('id');
+        const currentUserId = tg.initDataUnsafe?.user?.id || 0;
+
+        async function loadDeal() {
+            if (!dealId) {
+                document.getElementById('loading').textContent = 'Сделка не найдена';
+                return;
+            }
+
+            try {
+                const res = await fetch(`${BACKEND}/deals/${dealId}`);
+                const data = await res.json();
+
+                if (!data.success) {
+                    document.getElementById('loading').textContent = 'Сделка не найдена';
+                    return;
+                }
+
+                renderDeal(data.deal);
+            } catch (e) {
+                document.getElementById('loading').textContent = 'Ошибка загрузки';
+            }
+        }
+
+        function getCommission(amount) {
+            if (amount <= 10000) return 0.01;
+            if (amount <= 25000) return 0.02;
+            if (amount <= 50000) return 0.03;
+            if (amount <= 100000) return 0.04;
+            return 0.05;
+        }
+
+        function renderDeal(deal) {
+            document.getElementById('loading').style.display = 'none';
+            const content = document.getElementById('content');
+            content.style.display = 'block';
+
+            const isSeller = currentUserId == deal.seller_id;
+            const isBuyer = currentUserId == deal.buyer_id;
+            const amount = parseFloat(deal.amount);
+            const commission = Math.round(amount * getCommission(amount));
+            const sellerGets = amount - commission;
+
+            const statusMap = {
+                'pending': ['Ожидает покупателя', 'status-pending'],
+                'active': ['Активна', 'status-active'],
+                'completed': ['Завершена', 'status-completed'],
+                'cancelled': ['Отменена', 'status-cancelled'],
+                'dispute': ['Спор', 'status-pending']
+            };
+            const [statusText, statusClass] = statusMap[deal.status] || ['Неизвестно', 'status-pending'];
+
+            let buttonsHtml = '';
+
+            if (deal.status === 'pending' && !isSeller) {
+                buttonsHtml = `
+                    <button class="btn btn-primary" onclick="acceptDeal()">
+                        💰 Принять сделку и заблокировать ${amount.toLocaleString()} ₽
+                    </button>
+                `;
+            }
+
+            if (deal.status === 'active') {
+                if (isSeller && !deal.seller_action) {
+                    buttonsHtml += `
+                        <button class="btn btn-success" onclick="takeAction('confirm')">✅ Всё ок, подтверждаю</button>
+                        <button class="btn btn-danger" onclick="takeAction('cancel')">❌ Отказываюсь от сделки</button>
+                    `;
+                }
+                if (isBuyer && !deal.buyer_action) {
+                    buttonsHtml += `
+                        <button class="btn btn-success" onclick="takeAction('confirm')">✅ Всё ок, подтверждаю</button>
+                        <button class="btn btn-danger" onclick="takeAction('cancel')">❌ Отказываюсь от сделки</button>
+                    `;
+                }
+            }
+
+            content.innerHTML = `
+                <span class="status-badge ${statusClass}">${statusText}</span>
+
+                <div class="card">
+                    <div class="card-label">Сумма сделки</div>
+                    <div class="amount">${amount.toLocaleString()} ₽</div>
+                    <div class="commission-info">Продавец получит: ${sellerGets.toLocaleString()} ₽ (комиссия ${commission.toLocaleString()} ₽)</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-label">Товар / Услуга</div>
+                    <div class="card-value">${deal.description}</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-label">ID сделки</div>
+                    <div style="font-size:12px; opacity:0.6; word-break:break-all">${deal.id}</div>
+                </div>
+
+                <div class="divider"></div>
+
+                ${buttonsHtml}
+            `;
+        }
+
+        async function acceptDeal() {
+            try {
+                const res = await fetch(`${BACKEND}/deals/${dealId}/accept`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ buyer_id: currentUserId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    tg.showAlert('Сделка принята! Деньги заблокированы.');
+                    loadDeal();
+                } else {
+                    tg.showAlert('Ошибка: ' + data.error);
+                }
+            } catch (e) {
+                tg.showAlert('Ошибка соединения');
+            }
+        }
+
+        async function takeAction(action) {
+            try {
+                const res = await fetch(`${BACKEND}/deals/${dealId}/action`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: currentUserId, action: action })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    tg.showAlert(data.message);
+                    loadDeal();
+                } else {
+                    tg.showAlert('Ошибка: ' + data.error);
+                }
+            } catch (e) {
+                tg.showAlert('Ошибка соединения');
+            }
+        }
+
+        loadDeal();
+    </script>
+</body>
+</html>
