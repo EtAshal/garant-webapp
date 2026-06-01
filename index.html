@@ -86,14 +86,58 @@
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
-
+    
+        const BACKEND = 'https://garant-backend-production.up.railway.app';
+        const currentUserId = tg.initDataUnsafe?.user?.id || 0;
+    
         function createDeal() {
             window.location.href = 'create.html';
         }
-
-        function showMyDeals() {
-            window.location.href = 'deals.html';
+    
+        async function loadDeals() {
+            if (!currentUserId) return;
+            
+            try {
+                const res = await fetch(`${BACKEND}/users/${currentUserId}/deals`);
+                const data = await res.json();
+                
+                if (!data.success || !data.deals.length) return;
+                
+                const container = document.getElementById('deals-container');
+                const empty = document.getElementById('empty-state');
+                empty.style.display = 'none';
+                
+                const statusMap = {
+                    'pending': '🟡 Ожидает покупателя',
+                    'active': '🔵 Активна',
+                    'completed': '✅ Завершена',
+                    'cancelled': '❌ Отменена',
+                    'dispute': '⚠️ Спор'
+                };
+                
+                container.innerHTML = data.deals.map(deal => `
+                    <div onclick="openDeal('${deal.id}')" style="
+                        background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+                        border-radius: 12px;
+                        padding: 14px;
+                        margin-bottom: 10px;
+                        cursor: pointer;
+                    ">
+                        <div style="font-weight:600; margin-bottom:4px">${deal.description}</div>
+                        <div style="font-size:18px; font-weight:700">${parseInt(deal.amount).toLocaleString()} ₽</div>
+                        <div style="font-size:12px; opacity:0.6; margin-top:4px">${statusMap[deal.status] || deal.status}</div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                console.log('Ошибка загрузки сделок', e);
+            }
         }
+    
+        function openDeal(dealId) {
+            window.location.href = `deal.html?id=${dealId}`;
+        }
+    
+        loadDeals();
     </script>
 </body>
 </html>
