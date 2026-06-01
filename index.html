@@ -15,9 +15,12 @@
             padding: 16px;
         }
         .header {
-            text-align: center;
-            padding: 24px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 24px 0 16px;
         }
+        .header-center { text-align: center; flex: 1; }
         .header h1 {
             font-size: 24px;
             font-weight: 700;
@@ -26,6 +29,19 @@
             font-size: 14px;
             opacity: 0.6;
             margin-top: 4px;
+        }
+        .profile-btn {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
         }
         .btn {
             display: block;
@@ -64,14 +80,18 @@
 </head>
 <body>
     <div class="header">
-        <h1>🔒 Гарант</h1>
-        <p>Безопасные сделки между людьми</p>
+        <div style="width:38px"></div>
+        <div class="header-center">
+            <h1>🔒 Гарант</h1>
+            <p>Безопасные сделки между людьми</p>
+        </div>
+        <button class="profile-btn" onclick="window.location.href='profile.html'" title="Профиль">👤</button>
     </div>
-
+ 
     <button class="btn btn-primary" onclick="createDeal()">
         + Создать сделку
     </button>
-
+ 
     <div class="deals-list">
         <h2>Активные сделки</h2>
         <div class="empty-state" id="empty-state">
@@ -79,7 +99,7 @@
         </div>
         <div id="deals-container"></div>
     </div>
-
+ 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
