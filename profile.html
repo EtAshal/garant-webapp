@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Профиль</title>
+    <meta name="ngrok-skip-browser-warning" content="true">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Geologica:wght@300;400;600;800&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: var(--tg-theme-bg-color, #0f0f0f);
+            --bg2: var(--tg-theme-secondary-bg-color, #1a1a1a);
+            --text: var(--tg-theme-text-color, #ffffff);
+            --hint: var(--tg-theme-hint-color, #888);
+            --accent: #2AABEE;
+            --green: #3ecf8e;
+            --yellow: #f5c542;
+            --red: #ff5c5c;
+            --orange: #ff9f43;
+        }
+
+        body {
+            font-family: 'Geologica', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding-bottom: 32px;
+        }
+
+        .hero {
+            position: relative;
+            padding: 28px 20px 24px;
+            overflow: hidden;
+        }
+        .hero-bg {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse 80% 120% at 50% -20%, rgba(42,171,238,0.18) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .header-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .back-btn {
+            background: none;
+            border: none;
+            color: var(--text);
+            font-size: 22px;
+            cursor: pointer;
+            padding: 4px 6px 4px 0;
+            line-height: 1;
+        }
+        .page-title {
+            font-size: 18px;
+            font-weight: 800;
+            letter-spacing: -0.3px;
+        }
+        .avatar-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), #1a7abf);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            font-weight: 800;
+            color: white;
+            flex-shrink: 0;
+            box-shadow: 0 0 0 3px rgba(42,171,238,0.25);
+        }
+        .user-info { flex: 1; min-width: 0; }
+        .user-name {
+            font-size: 20px;
+            font-weight: 800;
+            letter-spacing: -0.4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .user-handle {
+            font-size: 13px;
+            color: var(--hint);
+            margin-top: 2px;
+        }
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 700;
+            margin-top: 10px;
+            letter-spacing: 0.2px;
+        }
+        .status-0  { background: rgba(136,136,136,0.15); color: var(--hint); }
+        .status-1  { background: rgba(42,171,238,0.15);  color: var(--accent); }
+        .status-2  { background: rgba(62,207,142,0.15);  color: var(--green); }
+        .status-3  { background: rgba(245,197,66,0.15);  color: var(--yellow); }
+
+        .points-section { padding: 0 20px 20px; }
+        .points-card {
+            background: var(--bg2);
+            border-radius: 18px;
+            padding: 18px;
+        }
+        .points-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 14px;
+        }
+        .points-label {
+            font-size: 12px;
+            color: var(--hint);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            font-weight: 600;
+        }
+        .points-value {
+            font-size: 36px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            line-height: 1;
+            margin-top: 4px;
+        }
+        .points-next { text-align: right; }
+        .points-next-label { font-size: 11px; color: var(--hint); }
+        .points-next-value {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--accent);
+            margin-top: 2px;
+        }
+        .progress-wrap {
+            background: rgba(255,255,255,0.08);
+            border-radius: 6px;
+            height: 6px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            border-radius: 6px;
+            background: linear-gradient(90deg, var(--accent), var(--green));
+            transition: width 1s cubic-bezier(.4,0,.2,1);
+            width: 0%;
+        }
+        .progress-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 6px;
+            font-size: 11px;
+            color: var(--hint);
+        }
+
+        .stats-section { padding: 0 20px 20px; }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+        }
+        .stat-card {
+            background: var(--bg2);
+            border-radius: 14px;
+            padding: 14px 12px;
+            text-align: center;
+        }
+        .stat-icon { font-size: 20px; margin-bottom: 6px; }
+        .stat-num {
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+        .stat-num.green  { color: var(--green); }
+        .stat-num.yellow { color: var(--yellow); }
+        .stat-num.red    { color: var(--red); }
+        .stat-label { font-size: 11px; color: var(--hint); margin-top: 2px; }
+
+        .roles-section { padding: 0 20px 20px; }
+        .section-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--hint);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 10px;
+        }
+        .roles-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .role-card {
+            background: var(--bg2);
+            border-radius: 14px;
+            padding: 14px;
+        }
+        .role-title { font-size: 12px; color: var(--hint); margin-bottom: 6px; font-weight: 600; }
+        .role-pts { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+        .role-count { font-size: 12px; color: var(--hint); margin-top: 4px; }
+
+        .history-section { padding: 0 20px; }
+        .history-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+        .tab {
+            padding: 7px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+            transition: all .2s;
+            background: var(--bg2);
+            color: var(--hint);
+        }
+        .tab.active { background: var(--accent); color: white; }
+
+        .deal-item {
+            background: var(--bg2);
+            border-radius: 14px;
+            padding: 14px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: opacity .15s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .deal-item:active { opacity: 0.7; }
+        .deal-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        .icon-completed { background: rgba(62,207,142,0.15); }
+        .icon-cancelled { background: rgba(255,92,92,0.15); }
+        .icon-active    { background: rgba(42,171,238,0.15); }
+        .icon-pending   { background: rgba(245,197,66,0.15); }
+        .icon-dispute   { background: rgba(255,159,67,0.15); }
+
+        .deal-body { flex: 1; min-width: 0; }
+        .deal-desc {
+            font-size: 14px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .deal-meta { font-size: 12px; color: var(--hint); margin-top: 2px; }
+        .deal-right { text-align: right; flex-shrink: 0; }
+        .deal-amount { font-size: 15px; font-weight: 800; }
+        .deal-amount.income  { color: var(--green); }
+        .deal-amount.outcome { color: var(--red); }
+        .deal-amount.neutral { color: var(--hint); }
+        .deal-pts { font-size: 11px; color: var(--hint); margin-top: 2px; }
+        .deal-pts.pos { color: var(--green); }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 0;
+            color: var(--hint);
+            font-size: 14px;
+        }
+        .empty-icon { font-size: 40px; margin-bottom: 10px; }
+
+        .skel {
+            background: linear-gradient(90deg, var(--bg2) 25%, rgba(255,255,255,0.06) 50%, var(--bg2) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.4s infinite;
+            border-radius: 8px;
+        }
+        @keyframes shimmer {
+            0%   { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        .fade-in { animation: fadeUp .4s ease both; }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .d1 { animation-delay: .05s; }
+        .d2 { animation-delay: .10s; }
+        .d3 { animation-delay: .15s; }
+        .d4 { animation-delay: .20s; }
+        .d5 { animation-delay: .25s; }
+    </style>
+</head>
+<body>
+
+<div class="hero">
+    <div class="hero-bg"></div>
+    <div class="header-row">
+        <button class="back-btn" onclick="window.location.href='index.html'">←</button>
+        <span class="page-title">Профиль</span>
+    </div>
+    <div class="avatar-row fade-in">
+        <div class="avatar" id="avatar">?</div>
+        <div class="user-info">
+            <div class="user-name" id="user-name">Загрузка…</div>
+            <div class="user-handle" id="user-handle"></div>
+            <div id="status-pill"></div>
+        </div>
+    </div>
+</div>
+
+<div class="points-section">
+    <div class="points-card fade-in d1">
+        <div class="points-row">
+            <div>
+                <div class="points-label">Очки доверия</div>
+                <div class="points-value" id="pts-value">—</div>
+            </div>
+            <div class="points-next">
+                <div class="points-next-label">до следующего статуса</div>
+                <div class="points-next-value" id="pts-next">—</div>
+            </div>
+        </div>
+        <div class="progress-wrap">
+            <div class="progress-fill" id="pts-bar"></div>
+        </div>
+        <div class="progress-labels">
+            <span id="bar-left">0</span>
+            <span id="bar-right">—</span>
+        </div>
+    </div>
+</div>
+
+<div class="stats-section">
+    <div class="stats-grid fade-in d2">
+        <div class="stat-card">
+            <div class="stat-icon">✅</div>
+            <div class="stat-num green" id="cnt-completed">—</div>
+            <div class="stat-label">завершено</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">⚠️</div>
+            <div class="stat-num yellow" id="cnt-dispute">—</div>
+            <div class="stat-label">споров</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">💰</div>
+            <div class="stat-num" id="cnt-volume" style="font-size:16px">—</div>
+            <div class="stat-label">оборот</div>
+        </div>
+    </div>
+</div>
+
+<div class="roles-section">
+    <div class="section-title">Рейтинг</div>
+    <div class="roles-grid fade-in d3">
+        <div class="role-card">
+            <div class="role-title">📦 Как продавец</div>
+            <div class="role-pts" id="pts-seller">—</div>
+            <div class="role-count" id="cnt-seller">— сделок</div>
+        </div>
+        <div class="role-card">
+            <div class="role-title">🛒 Как покупатель</div>
+            <div class="role-pts" id="pts-buyer">—</div>
+            <div class="role-count" id="cnt-buyer">— сделок</div>
+        </div>
+    </div>
+</div>
+
+<div class="history-section">
+    <div class="section-title">История сделок</div>
+    <div class="history-tabs fade-in d4">
+        <button class="tab active" onclick="filterDeals('all', this)">Все</button>
+        <button class="tab" onclick="filterDeals('completed', this)">Завершённые</button>
+        <button class="tab" onclick="filterDeals('active', this)">Активные</button>
+    </div>
+    <div id="history-list" class="fade-in d5"></div>
+</div>
+
+<script>
+const tg = window.Telegram.WebApp;
+tg.expand();
+
+const BACKEND = 'https://garant-backend-production.up.railway.app';
+const user = tg.initDataUnsafe?.user || {};
+const currentUserId = user.id || 0;
+
+let allDeals = [];
+
+const STATUSES = [
+    { min: 0,    max: 99,        name: 'Новичок',     emoji: '🆕', cls: 'status-0' },
+    { min: 100,  max: 499,       name: 'Проверенный', emoji: '✔️', cls: 'status-1' },
+    { min: 500,  max: 1499,      name: 'Надёжный',    emoji: '🛡️', cls: 'status-2' },
+    { min: 1500, max: Infinity,  name: 'Гарант',      emoji: '⭐', cls: 'status-3' },
+];
+const LEVELS = [0, 100, 500, 1500];
+
+function getStatus(pts) {
+    for (let i = STATUSES.length - 1; i >= 0; i--) {
+        if (pts >= STATUSES[i].min) return STATUSES[i];
+    }
+    return STATUSES[0];
+}
+
+function getProgress(pts) {
+    const capped = Math.max(0, pts);
+    for (let i = 0; i < LEVELS.length - 1; i++) {
+        if (capped < LEVELS[i + 1]) {
+            const pct = (capped - LEVELS[i]) / (LEVELS[i + 1] - LEVELS[i]);
+            return {
+                pct: Math.round(pct * 100),
+                left: LEVELS[i],
+                right: LEVELS[i + 1],
+                need: LEVELS[i + 1] - capped,
+            };
+        }
+    }
+    return { pct: 100, left: 1500, right: '∞', need: 0 };
+}
+
+function getCommission(amount) {
+    if (amount <= 10000) return 0.01;
+    if (amount <= 25000) return 0.02;
+    if (amount <= 50000) return 0.03;
+    if (amount <= 100000) return 0.04;
+    return 0.05;
+}
+
+function renderProfile(deals) {
+    const name = [user.first_name, user.last_name].filter(Boolean).join(' ') || 'Пользователь';
+    const initials = name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+    document.getElementById('avatar').textContent = initials;
+    document.getElementById('user-name').textContent = name;
+    if (user.username) {
+        document.getElementById('user-handle').textContent = '@' + user.username;
+    }
+
+    const completed = deals.filter(d => d.status === 'completed');
+    const disputes  = deals.filter(d => d.status === 'dispute');
+    const asSeller  = completed.filter(d => d.seller_id == currentUserId);
+    const asBuyer   = completed.filter(d => d.buyer_id  == currentUserId);
+
+    const sellerPts = asSeller.reduce((s, d) => s + Math.floor(parseFloat(d.amount) / 100), 0);
+    const buyerPts  = asBuyer.reduce((s, d)  => s + Math.floor(parseFloat(d.amount) / 100), 0);
+    const totalPts  = sellerPts + buyerPts;
+    const volume    = completed.reduce((s, d) => s + parseFloat(d.amount), 0);
+
+    const status = getStatus(totalPts);
+    const prog   = getProgress(totalPts);
+
+    document.getElementById('status-pill').innerHTML =
+        `<span class="status-pill ${status.cls}">${status.emoji} ${status.name}</span>`;
+
+    document.getElementById('pts-value').textContent = totalPts.toLocaleString('ru');
+    document.getElementById('pts-next').textContent  = prog.need > 0
+        ? `ещё ${prog.need.toLocaleString('ru')} очков`
+        : 'максимальный уровень';
+    document.getElementById('bar-left').textContent  = prog.left.toLocaleString('ru');
+    document.getElementById('bar-right').textContent = typeof prog.right === 'number'
+        ? prog.right.toLocaleString('ru') : prog.right;
+
+    requestAnimationFrame(() => {
+        setTimeout(() => {
+            document.getElementById('pts-bar').style.width = prog.pct + '%';
+        }, 150);
+    });
+
+    document.getElementById('cnt-completed').textContent = completed.length;
+    document.getElementById('cnt-dispute').textContent   = disputes.length;
+    document.getElementById('cnt-volume').textContent    = volume >= 1000
+        ? (volume / 1000).toFixed(1).replace('.0', '') + 'к ₽'
+        : volume.toLocaleString('ru') + ' ₽';
+
+    document.getElementById('pts-seller').textContent = sellerPts.toLocaleString('ru');
+    document.getElementById('cnt-seller').textContent = asSeller.length + ' сделок';
+    document.getElementById('pts-buyer').textContent  = buyerPts.toLocaleString('ru');
+    document.getElementById('cnt-buyer').textContent  = asBuyer.length + ' сделок';
+}
+
+const DEAL_META = {
+    completed: { emoji: '✅', iconCls: 'icon-completed', label: 'Завершена' },
+    cancelled:  { emoji: '❌', iconCls: 'icon-cancelled', label: 'Отменена'  },
+    active:     { emoji: '🔵', iconCls: 'icon-active',    label: 'Активна'   },
+    pending:    { emoji: '🟡', iconCls: 'icon-pending',   label: 'Ожидает'   },
+    dispute:    { emoji: '⚠️', iconCls: 'icon-dispute',  label: 'Спор'      },
+};
+
+function dealCard(deal) {
+    const meta   = DEAL_META[deal.status] || DEAL_META.pending;
+    const amount = parseFloat(deal.amount);
+    const isSeller = deal.seller_id == currentUserId;
+    const commission = isSeller ? Math.round(amount * getCommission(amount)) : 0;
+    const net = isSeller ? amount - commission : amount;
+
+    let amountClass = 'neutral', amountSign = '';
+    if (deal.status === 'completed') {
+        amountClass = isSeller ? 'income' : 'outcome';
+        amountSign  = isSeller ? '+' : '−';
+    }
+
+    const pts = deal.status === 'completed'
+        ? '+' + Math.floor(amount / 100) + ' очков' : '';
+
+    const dateStr = deal.created_at
+        ? new Date(deal.created_at).toLocaleDateString('ru', { day: 'numeric', month: 'short' }) : '';
+
+    return `
+    <div class="deal-item" onclick="openDeal('${deal.id}')">
+        <div class="deal-icon ${meta.iconCls}">${meta.emoji}</div>
+        <div class="deal-body">
+            <div class="deal-desc">${escHtml(deal.description)}</div>
+            <div class="deal-meta">${meta.label} · ${isSeller ? 'Продавец' : 'Покупатель'}${dateStr ? ' · ' + dateStr : ''}</div>
+        </div>
+        <div class="deal-right">
+            <div class="deal-amount ${amountClass}">${amountSign}${net.toLocaleString('ru')} ₽</div>
+            ${pts ? `<div class="deal-pts pos">${pts}</div>` : ''}
+        </div>
+    </div>`;
+}
+
+function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+let currentFilter = 'all';
+
+function filterDeals(filter, btn) {
+    currentFilter = filter;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    renderHistory();
+}
+
+function renderHistory() {
+    const list = document.getElementById('history-list');
+    let filtered = allDeals;
+    if (currentFilter === 'completed') filtered = allDeals.filter(d => d.status === 'completed');
+    else if (currentFilter === 'active') filtered = allDeals.filter(d => ['active','pending','dispute'].includes(d.status));
+
+    if (!filtered.length) {
+        list.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div>Сделок пока нет</div>`;
+        return;
+    }
+    list.innerHTML = filtered.map(dealCard).join('');
+}
+
+function openDeal(id) {
+    window.location.href = `deal.html?id=${id}`;
+}
+
+async function load() {
+    document.getElementById('history-list').innerHTML = `
+        <div class="deal-item">
+            <div class="deal-icon skel" style="width:40px;height:40px;border-radius:50%"></div>
+            <div class="deal-body">
+                <div class="skel" style="height:14px;width:70%;margin-bottom:8px"></div>
+                <div class="skel" style="height:11px;width:45%"></div>
+            </div>
+        </div>`.repeat(3);
+
+    try {
+        if (!currentUserId) throw new Error('no user');
+        const res  = await fetch(`${BACKEND}/users/${currentUserId}/deals`);
+        const data = await res.json();
+        allDeals = data.success ? data.deals : [];
+    } catch(e) {
+        allDeals = [];
+    }
+
+    renderProfile(allDeals);
+    renderHistory();
+}
+
+load();
+</script>
+</body>
+</html>
