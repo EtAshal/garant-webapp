@@ -171,7 +171,7 @@
 
         document.getElementById('description').addEventListener('input', updateCommission);
 
-        async function createDeal() {
+async function createDeal() {
     const amount = parseFloat(document.getElementById('amount').value);
     const description = document.getElementById('description').value;
 
@@ -195,7 +195,9 @@
         const data = await response.json();
 
         if (data.success) {
-            tg.showAlert(`✅ Сделка создана!\n\nСумма: ${amount.toLocaleString()} ₽\nТовар: ${description}\n\nСсылка для покупателя:\nhttps://etashal.github.io/garant-webapp/deal.html?id=${data.deal_id}`);
+            const dealUrl = `https://etashal.github.io/garant-webapp/deal.html?id=${data.deal_id}`;
+            await navigator.clipboard.writeText(dealUrl);
+            tg.showAlert(`✅ Сделка создана!\n\nСумма: ${amount.toLocaleString()} ₽\nТовар: ${description}\n\n🔗 Ссылка скопирована в буфер обмена!\nОтправь её покупателю.`);
             window.location.href = 'index.html';
         } else {
             tg.showAlert('Ошибка: ' + data.error);
