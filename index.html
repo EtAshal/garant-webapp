@@ -739,6 +739,66 @@
         <div class="quote-divider">✦</div>
     </div>
 
+    <!-- Защита от мошенников -->
+    <div class="scroll-section" onclick="toggleSection(this)">
+        <div class="scroll-section-header">
+            <span class="scroll-section-icon">🛡️</span>
+            <span class="scroll-section-title">Как защитить себя</span>
+            <span class="scroll-section-arrow">›</span>
+        </div>
+        <div class="scroll-section-body">
+
+            <div class="sub-rule" onclick="toggleSubRule(this, event)">
+                <div class="sub-rule-header">
+                    <span class="sub-rule-title">📦 Продавцу</span>
+                    <span class="sub-rule-arrow">›</span>
+                </div>
+                <div class="sub-rule-body">
+                    • Делай фото/скриншот товара перед передачей — это твоё главное доказательство в споре<br><br>
+                    • Указывай подробное описание — состояние, цвет, размер, комплектацию<br><br>
+                    • Если доставка — сохраняй трек-номер и отправляй покупателю<br><br>
+                    • Не пропадай после оплаты — через <b>3 дня</b> молчания покупатель может открыть спор
+                </div>
+            </div>
+
+            <div class="sub-rule" onclick="toggleSubRule(this, event)">
+                <div class="sub-rule-header">
+                    <span class="sub-rule-title">🛒 Покупателю</span>
+                    <span class="sub-rule-arrow">›</span>
+                </div>
+                <div class="sub-rule-body">
+                    • Не нажимай «Всё ок» пока не проверил товар — после подтверждения отменить нельзя<br><br>
+                    • Для цифровых товаров — не меняй пароль и не подключай 2FA до полной проверки. <b>Факт использования = факт получения</b><br><br>
+                    • Если продавец молчит больше 3 дней — не жди, открывай спор
+                </div>
+            </div>
+
+            <div class="sub-rule" onclick="toggleSubRule(this, event)">
+                <div class="sub-rule-header">
+                    <span class="sub-rule-title">⚔️ В споре</span>
+                    <span class="sub-rule-arrow">›</span>
+                </div>
+                <div class="sub-rule-body">
+                    Побеждает тот у кого больше доказательств:<br><br>
+                    • Скриншоты переписки<br>
+                    • Фото товара<br>
+                    • Трек-номер доставки
+                </div>
+            </div>
+
+            <div class="sub-rule" onclick="toggleSubRule(this, event)">
+                <div class="sub-rule-header">
+                    <span class="sub-rule-title">⚖️ Помни</span>
+                    <span class="sub-rule-arrow">›</span>
+                </div>
+                <div class="sub-rule-body">
+                    Сделки проходят на <b>доверии между сторонами</b> — платформа не контролирует физическую передачу товара. Всё на страх и риск участников.
+                </div>
+            </div>
+
+        </div>
+    </div>
+
     <!-- Правила -->
     <div class="scroll-section" onclick="toggleSection(this)">
         <div class="scroll-section-header">
@@ -1034,6 +1094,46 @@
         function openDeal(id) {
             if (typeof GARANT_SOUNDS !== 'undefined') GARANT_SOUNDS.tapDeal();
             window.location.href = `deal.html?id=${id}`;
+        }
+
+        // ── ПРОВЕРКА БАНА ─────────────────────────────────────
+        async function checkBan() {
+            if (!currentUserId) return;
+            try {
+                const res  = await fetch(`${BACKEND}/users/${currentUserId}/public`);
+                const data = await res.json();
+                if (!data.success) return;
+
+                const user = data.user;
+                if (user.is_banned) {
+                    hideLoader();
+                    document.getElementById('page-wrap').innerHTML = `
+                        <div style="display:flex;flex-direction:column;align-items:center;
+                            justify-content:center;min-height:80vh;text-align:center;padding:40px 24px;">
+                            <div style="font-size:64px;margin-bottom:20px">🚫</div>
+                            <div style="font-family:'Cinzel',serif;font-size:20px;font-weight:700;
+                                color:#c9a84c;letter-spacing:2px;margin-bottom:12px">ДОСТУП ЗАКРЫТ</div>
+                            <div style="font-size:15px;font-style:italic;color:#a08060;line-height:1.7;max-width:280px">
+                                Ваш аккаунт заблокирован за нарушение правил платформы.<br><br>
+                                Если вы считаете это ошибкой — обратитесь в поддержку.
+                            </div>
+                        </div>`;
+                    return;
+                }
+
+                if (user.is_frozen) {
+                    const until = user.frozen_until
+                        ? new Date(user.frozen_until).toLocaleDateString('ru', { day:'numeric', month:'long' })
+                        : '';
+                    document.getElementById('page-wrap').insertAdjacentHTML('afterbegin', `
+                        <div style="background:rgba(42,106,173,0.15);border:1px solid #2a6aad;
+                            border-radius:8px;padding:12px 16px;margin:16px 0 0;
+                            font-size:13px;font-style:italic;color:#5aabee;text-align:center;">
+                            ❄️ Ваш аккаунт заморожен${until ? ' до ' + until : ''}.
+                            Создание новых сделок недоступно.
+                        </div>`);
+                }
+            } catch(e) {}
         }
 
         // ── СВИТОК ────────────────────────────────────────────
@@ -1546,6 +1646,7 @@
         loadMyDeals();
         initSwipe();
         checkDaily();
+        checkBan();
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <script>
